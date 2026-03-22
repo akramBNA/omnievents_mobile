@@ -1,67 +1,29 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createDrawerNavigator } from "@react-navigation/drawer";
-import {
-  DefaultTheme,
-  ThemeProvider
-} from "@react-navigation/native";
+import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import HomeScreen from "./index";
 
-const Drawer = createDrawerNavigator();
-
-function CustomDrawerContent({ userName, logout, navigation }: any) {
-  return (
-    <View style={styles.drawerContainer}>
-      <Text style={styles.greeting}>Bonjour, {userName || "Utilisateur"}</Text>
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() => logout(navigation)}
-      >
-        <Text style={styles.logoutText}>Se déconnecter</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-export default function MainLayout() {
-  const [userName, setUserName] = useState<string>("");
+export default function RootLayout() {
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem("user_name").then((name) => {
-      if (name) setUserName(name);
+    AsyncStorage.getItem("token").then((token) => {
+      if (token) setInitialRoute("home");
+      else setInitialRoute("login");
     });
   }, []);
 
-  const logout = async (navigation: any) => {
-    await AsyncStorage.clear();
-    navigation.replace("/(auth)/login");
-  };
+  if (!initialRoute) return null;
 
   return (
     <ThemeProvider value={DefaultTheme}>
-      <Drawer.Navigator
-        screenOptions={{ headerShown: true }}
-        drawerContent={(props) => (
-          <CustomDrawerContent {...props} userName={userName} logout={logout} />
-        )}
-      >
-        <Drawer.Screen name="Home" component={HomeScreen} />
-      </Drawer.Navigator>
+      <Stack initialRouteName={initialRoute}>
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="signup" options={{ headerShown: false }} />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
+      </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  drawerContainer: { flex: 1, padding: 20, justifyContent: "flex-start" },
-  greeting: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
-  logoutButton: {
-    backgroundColor: "#dc2626",
-    padding: 12,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  logoutText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
-});
