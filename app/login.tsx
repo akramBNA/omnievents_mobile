@@ -48,7 +48,7 @@ export default function LoginScreen() {
       console.log("USER:", data);
       console.log("TOKEN:", token);
 
-      router.replace("/(main)/index");
+      router.replace("/");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Erreur");
     } finally {
