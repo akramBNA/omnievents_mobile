@@ -14,16 +14,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
-        {/* Login page first */}
         <Stack.Screen name="login" options={{ headerShown: false }} />
 
-        {/* Signup page */}
         <Stack.Screen name="signup" options={{ headerShown: false }} />
 
-        {/* Home page (index) */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
 
-        {/* Modal */}
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
