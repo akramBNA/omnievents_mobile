@@ -1,31 +1,20 @@
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import {
-  DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import "react-native-gesture-handler";
 import HomeScreen from "./index";
 
 const Drawer = createDrawerNavigator();
 
-// --- Custom Drawer Component ---
-interface DrawerProps {
-  userName: string;
-  logout: (navigation: any) => void;
-  navigation: any;
-}
-
-function CustomDrawerContent({ userName, logout, navigation }: DrawerProps) {
+function CustomDrawerContent({ userName, logout, navigation }: any) {
   return (
     <View style={styles.drawerContainer}>
       <Text style={styles.greeting}>Bonjour, {userName || "Utilisateur"}</Text>
-
       <TouchableOpacity
         style={styles.logoutButton}
         onPress={() => logout(navigation)}
@@ -36,24 +25,22 @@ function CustomDrawerContent({ userName, logout, navigation }: DrawerProps) {
   );
 }
 
-// --- Main Root Layout ---
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
+export default function MainLayout() {
   const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-    AsyncStorage.getItem("user_name").then((name: string | null) => {
+    AsyncStorage.getItem("user_name").then((name) => {
       if (name) setUserName(name);
     });
   }, []);
 
   const logout = async (navigation: any) => {
     await AsyncStorage.clear();
-    navigation.replace("/login"); // send back to login
+    navigation.replace("/(auth)/login");
   };
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <Drawer.Navigator
         screenOptions={{ headerShown: true }}
         drawerContent={(props) => (
@@ -67,27 +54,14 @@ export default function RootLayout() {
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
-  drawerContainer: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "flex-start",
-  },
-  greeting: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
+  drawerContainer: { flex: 1, padding: 20, justifyContent: "flex-start" },
+  greeting: { fontSize: 18, fontWeight: "bold", marginBottom: 20 },
   logoutButton: {
     backgroundColor: "#dc2626",
     padding: 12,
     borderRadius: 8,
     marginTop: 20,
   },
-  logoutText: {
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "center",
-  },
+  logoutText: { color: "#fff", fontWeight: "bold", textAlign: "center" },
 });
