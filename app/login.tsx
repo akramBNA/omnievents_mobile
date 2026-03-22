@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -45,10 +46,16 @@ export default function LoginScreen() {
 
       const { data, token } = res.data;
 
+      await AsyncStorage.setItem("token", token);
+      await AsyncStorage.setItem("user_id", data.user_id.toString());
+      await AsyncStorage.setItem("user_name", data.user_name);
+
+      // router.replace("/");
+
+      router.replace("home");
+
       console.log("USER:", data);
       console.log("TOKEN:", token);
-
-      router.replace("/");
     } catch (err: any) {
       setError(err?.response?.data?.message || "Erreur");
     } finally {

@@ -1,29 +1,27 @@
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
+import { useEffect, useState } from "react";
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem("token").then((token) => {
+      if (token) setInitialRoute("home");
+      else setInitialRoute("login");
+    });
+  }, []);
+
+  if (!initialRoute) return null;
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={DefaultTheme}>
+      <Stack initialRouteName={initialRoute}>
         <Stack.Screen name="login" options={{ headerShown: false }} />
-
         <Stack.Screen name="signup" options={{ headerShown: false }} />
-
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-
-        <Stack.Screen
-          name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
-        />
+        <Stack.Screen name="home" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
