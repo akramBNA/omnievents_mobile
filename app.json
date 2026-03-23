@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "omnievents_mobile",
-    "slug": "omnievents_mobile",
+    "name": "OMNI EVENTS",
+    "slug": "omnievents mobile app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
