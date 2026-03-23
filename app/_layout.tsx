@@ -1,8 +1,10 @@
+import { store } from "@/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import { Provider } from "react-redux";
 
 export default function RootLayout() {
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
@@ -17,13 +19,15 @@ export default function RootLayout() {
   if (!initialRoute) return null;
 
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <Stack initialRouteName={initialRoute}>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="home" options={{ headerShown: false }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider value={DefaultTheme}>
+        <Stack initialRouteName={initialRoute}>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="signup" options={{ headerShown: false }} />
+          <Stack.Screen name="home" options={{ headerShown: false }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </Provider>
   );
 }
