@@ -1,5 +1,4 @@
-import { AppDispatch, RootState } from "@/store";
-import { fetchEventsThunk, subscribeThunk } from "@/store/eventsSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -14,6 +13,9 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
+import { AppDispatch, RootState } from "@/store";
+import { fetchEventsThunk, subscribeThunk } from "@/store/eventsSlice";
+
 interface Event {
   event_id: number;
   event_name: string;
@@ -25,18 +27,23 @@ interface Event {
 
 export default function HomeScreen() {
   const dispatch = useDispatch<AppDispatch>();
-  const { events, total, loading } = useSelector(
+  const { events, loading, total } = useSelector(
     (state: RootState) => state.events,
   );
 
   const [userId, setUserId] = useState<number | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(5);
-  const [search, setSearch] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const rowsPerPage = 5;
 
-  // fetch events when page, search, or userId changes
+  useEffect(() => {
+    AsyncStorage.getItem("user_id").then((id) => {
+      if (id) setUserId(Number(id));
+    });
+  }, []);
+
   useEffect(() => {
     if (userId !== null) {
       dispatch(
@@ -48,42 +55,37 @@ export default function HomeScreen() {
         }),
       );
     }
-  }, [dispatch, userId, page, search]);
+  }, [userId, page, search, dispatch]);
 
-  // refresh handler
   const onRefresh = async () => {
+    if (!userId) return;
     setRefreshing(true);
     setPage(0);
-    if (userId !== null) {
-      await dispatch(
-        fetchEventsThunk({
-          userId,
-          page: 0,
-          limit: rowsPerPage,
-          keyword: search,
-        }),
-      );
-    }
+    await dispatch(
+      fetchEventsThunk({
+        userId,
+        page: 0,
+        limit: rowsPerPage,
+        keyword: search,
+      }),
+    );
     setRefreshing(false);
   };
 
-  // subscribe handler
   const handleSubscribe = async (event: Event) => {
     if (!userId) return;
 
     setLoadingEventId(event.event_id);
-
-    const res = await dispatch(
-      subscribeThunk({ eventId: event.event_id, userId }),
-    );
-
-    if (subscribeThunk.fulfilled.match(res)) {
+    try {
+      await dispatch(
+        subscribeThunk({ eventId: event.event_id, userId }),
+      ).unwrap();
       Alert.alert("Succès!", "Vous êtes inscrit à cet événement !");
-    } else {
-      Alert.alert("Erreur", res.payload || "Une erreur est survenue !");
+    } catch (err: any) {
+      Alert.alert("Erreur", err || "Une erreur est survenue");
+    } finally {
+      setLoadingEventId(null);
     }
-
-    setLoadingEventId(null);
   };
 
   const totalPages = Math.ceil(total / rowsPerPage);
@@ -102,7 +104,7 @@ export default function HomeScreen() {
         }}
       />
 
-      {loading && page === 0 ? (
+      {loading && events.length === 0 ? (
         <ActivityIndicator
           size="large"
           color="#fff"

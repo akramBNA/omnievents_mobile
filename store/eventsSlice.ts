@@ -14,7 +14,7 @@ const initialState: EventsState = {
 };
 
 export const fetchEventsThunk = createAsyncThunk(
-  "events/fetch",
+  "events/getAllEvents",
   async (params: any, { rejectWithValue }) => {
     try {
       const res = await eventsService.getEvents(params);
@@ -26,7 +26,7 @@ export const fetchEventsThunk = createAsyncThunk(
 );
 
 export const subscribeThunk = createAsyncThunk(
-  "events/subscribe",
+  "users_events/subscribeToEvent",
   async ({ eventId, userId }: any, { rejectWithValue }) => {
     try {
       await eventsService.subscribeToEvent(eventId, userId);
