@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import API from "./api";
+import API from "./api.service";
 
 export const login = async (email: string, password: string) => {
   const res = await API.post("/users/signIn/", {
