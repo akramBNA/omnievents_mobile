@@ -1,4 +1,4 @@
-import { login } from "@/services/auth.service";
+import { loginThunk } from "@/store/authSlice";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,34 +10,28 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function LoginScreen() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
+  // const [error, setError] = useState("");
+  // const [loading, setLoading] = useState(false);
   const currentYear = new Date().getFullYear();
+  const dispatch = useDispatch<any>();
+  const { loading, error } = useSelector((s: any) => s.auth);
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async () => {
-    setLoading(true);
-    setError("");
+    const res = await dispatch(loginThunk({ email, password }));
 
-    try {
-      await login(email, password);
+    if (loginThunk.fulfilled.match(res)) {
       router.replace("home");
-    } catch (err: any) {
-      Alert.alert(
-        "Accès refusé",
-        err.message || "Cette application est réservée aux utilisateurs.",
-      );
-    } finally {
-      setLoading(false);
+    } else {
+      Alert.alert("Accès Refusé!", res.payload);
     }
   };
 
