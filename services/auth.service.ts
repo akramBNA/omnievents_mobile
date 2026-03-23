@@ -10,7 +10,7 @@ export const login = async (email: string, password: string) => {
   const { data, token } = res.data;
 
   if (data.role_type !== "user") {
-    throw new Error("Accès refusé");
+    throw new Error("Cette application est réservée aux utilisateurs");
   }
 
   await AsyncStorage.setItem("token", token);

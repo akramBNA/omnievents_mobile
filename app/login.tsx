@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -31,7 +32,10 @@ export default function LoginScreen() {
       await login(email, password);
       router.replace("home");
     } catch (err: any) {
-      setError(err.message || "Erreur");
+      Alert.alert(
+        "Accès refusé",
+        err.message || "Cette application est réservée aux utilisateurs.",
+      );
     } finally {
       setLoading(false);
     }
