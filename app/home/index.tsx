@@ -1,5 +1,5 @@
+import { getEvents, subscribeToEvent } from "@/services/events.service";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -52,28 +52,19 @@ export default function HomeScreen() {
 
   const fetchEvents = async (customPage = page, customSearch = search) => {
     setLoading(true);
+
     try {
-      const token = await AsyncStorage.getItem("token");
+      const data = await getEvents({
+        userId: userId!,
+        page: customPage,
+        limit: rowsPerPage,
+        keyword: customSearch,
+      });
 
-      const res = await axios.get(
-        "https://omnievents-backend.onrender.com/api/events/getAllEvents",
-        {
-          params: {
-            user_id: userId,
-            limit: rowsPerPage,
-            offset: customPage * rowsPerPage,
-            keyword: customSearch,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      setEvents(res.data.data || []);
-      setTotal(res.data.total || 0);
-    } catch (error) {
-      console.error(error);
+      setEvents(data.data || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -85,20 +76,7 @@ export default function HomeScreen() {
     setLoadingEventId(event.event_id);
 
     try {
-      const token = await AsyncStorage.getItem("token");
-
-      await axios.post(
-        "https://omnievents-backend.onrender.com/api/users_events/subscribeToEvent",
-        {
-          event_id: event.event_id,
-          user_id: userId,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await subscribeToEvent(event.event_id, userId);
 
       setEvents((prev) =>
         prev.map((e) =>
@@ -106,13 +84,9 @@ export default function HomeScreen() {
         ),
       );
 
-      Alert.alert("Succès!", "Vous êtes inscrit à cet événement !");
+      Alert.alert("Succès!", "Vous êtes inscrit !");
     } catch (err: any) {
-      console.error(err);
-      Alert.alert(
-        "Erreur!",
-        err?.response?.data?.message || "Une erreur est survenue",
-      );
+      Alert.alert("Erreur", err.message || "Erreur est survenue!");
     } finally {
       setLoadingEventId(null);
     }
