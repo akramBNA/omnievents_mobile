@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -46,16 +47,19 @@ export default function LoginScreen() {
 
       const { data, token } = res.data;
 
+      if (data.role_type !== "user") {
+        Alert.alert(
+          "Accès refusé",
+          "Cette application est réservée aux utilisateurs.",
+        );
+        return;
+      }
+
       await AsyncStorage.setItem("token", token);
       await AsyncStorage.setItem("user_id", data.user_id.toString());
       await AsyncStorage.setItem("user_name", data.user_name);
 
-      // router.replace("/");
-
       router.replace("home");
-
-      console.log("USER:", data);
-      console.log("TOKEN:", token);
     } catch (err: any) {
       setError(err?.response?.data?.message || "Erreur");
     } finally {
