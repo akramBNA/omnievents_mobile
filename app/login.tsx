@@ -1,3 +1,4 @@
+import { AppDispatch, RootState } from "@/store";
 import { loginThunk } from "@/store/authSlice";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -14,24 +15,31 @@ import { useDispatch, useSelector } from "react-redux";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [error, setError] = useState("");
-  // const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState("");
   const currentYear = new Date().getFullYear();
-  const dispatch = useDispatch<any>();
-  const { loading, error } = useSelector((s: any) => s.auth);
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async () => {
-    const res = await dispatch(loginThunk({ email, password }));
+    if (!email) return setLocalError("Email requis");
+    if (!validateEmail(email)) return setLocalError("Email invalide");
+    if (!password) return setLocalError("Mot de passe requis");
+    if (password.length < 6)
+      return setLocalError("Mot de passe doit contenir au moins 6 caractères");
 
-    if (loginThunk.fulfilled.match(res)) {
-      router.replace("home");
-    } else {
-      Alert.alert("Accès Refusé!", res.payload);
+    setLocalError("");
+
+    try {
+      const res = await dispatch(loginThunk({ email, password })).unwrap();
+      router.replace("/home");
+    } catch (err: any) {
+      Alert.alert("Accès refusé!", err);
     }
   };
 
@@ -40,13 +48,19 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Bienvenue au OMNIEVENTS</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {localError ? (
+          <Text style={styles.error}>{localError}</Text>
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : null}
 
         <TextInput
           placeholder="Email"
           style={styles.input}
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -121,10 +135,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "#dbeafe",
     padding: 14,
