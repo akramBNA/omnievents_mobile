@@ -1,5 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { signup } from "@/services/auth.service";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -30,38 +29,14 @@ export default function SignupScreen() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSignup = async () => {
+    setLoading(true);
     setError("");
 
-    if (!firstName) return setError("Prénom requis");
-    if (!lastName) return setError("Nom requis");
-    if (!email) return setError("Email requis");
-    if (!validateEmail(email)) return setError("Email invalide");
-    if (!password) return setError("Mot de passe requis");
-    if (password.length < 6)
-      return setError("Mot de passe doit contenir au moins 6 caractères");
-
-    setLoading(true);
-
     try {
-      const res = await axios.post(
-        "https://omnievents-backend.onrender.com/api/users/signUp/",
-        {
-          user_name: firstName,
-          user_lastname: lastName,
-          user_email: email,
-          user_password: password,
-        },
-      );
-
-      const { data, token } = res.data;
-
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("user_name", data.user_name);
-      await AsyncStorage.setItem("user_id", String(data.user_id));
-
+      await signup(firstName, lastName, email, password);
       router.replace("home");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de l'inscription");
+      setError(err.message || "Erreur");
     } finally {
       setLoading(false);
     }
