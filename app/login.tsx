@@ -1,7 +1,7 @@
 import { AppDispatch, RootState } from "@/store";
 import { loginThunk } from "@/store/authSlice";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -21,17 +21,27 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [localError, setLocalError] = useState("");
+
   const currentYear = new Date().getFullYear();
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  // Check if the form is valid
+  const isFormValid = useMemo(() => {
+    return (
+      email.trim() !== "" &&
+      validateEmail(email) &&
+      password.trim() !== "" &&
+      password.length >= 6
+    );
+  }, [email, password]);
+
   const handleLogin = async () => {
-    if (!email) return setLocalError("Email requis");
-    if (!validateEmail(email)) return setLocalError("Email invalide");
-    if (!password) return setLocalError("Mot de passe requis");
-    if (password.length < 6)
-      return setLocalError("Mot de passe doit contenir au moins 6 caractères");
+    if (!isFormValid) {
+      setLocalError("Veuillez remplir correctement tous les champs");
+      return;
+    }
 
     setLocalError("");
 
@@ -72,9 +82,9 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, !isFormValid && styles.disabledButton]}
           onPress={handleLogin}
-          disabled={loading}
+          disabled={!isFormValid || loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -134,6 +144,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginTop: 10,
+  },
+  disabledButton: {
+    backgroundColor: "#888",
   },
   buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
