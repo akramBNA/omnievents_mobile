@@ -40,7 +40,12 @@ export default function HomeLayout() {
 
   return (
     <Drawer.Navigator
-      screenOptions={{ headerShown: true }}
+      screenOptions={{
+        headerShown: true,
+        headerStyle: { backgroundColor: "#fff" },
+        headerTintColor: "#2563eb",
+        headerTitleStyle: { color: "#2563eb" },
+      }}
       drawerContent={(props) => <CustomDrawerContent {...props} />}
     >
       <Drawer.Screen name="Accueil" component={HomeScreen} />
