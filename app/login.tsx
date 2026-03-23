@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   StyleSheet,
   Text,
   TextInput,
@@ -100,9 +101,15 @@ export default function LoginScreen() {
           <Text style={styles.secondaryText}>S&apos;inscrire</Text>
         </TouchableOpacity>
       </View>
-
       <Text style={styles.footer}>
-        Réalisé par Akram Benaoun © {currentYear}
+        Réalisé par{" "}
+        <Text
+          style={{ textDecorationLine: "underline" }}
+          onPress={() => Linking.openURL("https://akram-benaoun.site")}
+        >
+          Akram Benaoun
+        </Text>{" "}
+        © {currentYear}
       </Text>
     </View>
   );
