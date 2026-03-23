@@ -1,8 +1,9 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
+    Linking,
     Platform,
     ScrollView,
     StyleSheet,
@@ -20,9 +21,7 @@ export default function SignupScreen() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
-  const { loading, error, user } = useSelector(
-    (state: RootState) => state.auth,
-  );
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -34,38 +33,19 @@ export default function SignupScreen() {
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  const isFormValid = useMemo(() => {
+    return (
+      firstName.trim() !== "" &&
+      lastName.trim() !== "" &&
+      email.trim() !== "" &&
+      validateEmail(email) &&
+      password.trim() !== "" &&
+      password.length >= 6
+    );
+  }, [firstName, lastName, email, password]);
+
   const handleSignup = async () => {
-    dispatch({ type: "auth/clearError" });
-
-    if (!firstName) {
-      alert("Prénom requis");
-      return;
-    }
-
-    if (!lastName) {
-      alert("Nom requis");
-      return;
-    }
-
-    if (!email) {
-      alert("Email requis");
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      alert("Email invalide");
-      return;
-    }
-
-    if (!password) {
-      alert("Mot de passe requis");
-      return;
-    }
-
-    if (password.length < 6) {
-      alert("Mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
+    if (!isFormValid) return;
 
     try {
       await dispatch(
@@ -74,7 +54,7 @@ export default function SignupScreen() {
 
       router.replace("/home");
     } catch (err: any) {
-      alert(err);
+      console.log("Signup error:", err);
     }
   };
 
@@ -121,9 +101,9 @@ export default function SignupScreen() {
           />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, !isFormValid && styles.disabledButton]}
             onPress={handleSignup}
-            disabled={loading}
+            disabled={!isFormValid || loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -141,7 +121,14 @@ export default function SignupScreen() {
         </View>
 
         <Text style={styles.footer}>
-          Réalisé par Akram Benaoun © {currentYear}
+          Réalisé par{" "}
+          <Text
+            style={{ textDecorationLine: "underline" }}
+            onPress={() => Linking.openURL("https://akram-benaoun.site")}
+          >
+            Akram Benaoun
+          </Text>{" "}
+          © {currentYear}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -185,6 +172,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+  disabledButton: {
+    backgroundColor: "#888",
+  },
   buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "#dbeafe",
@@ -209,6 +199,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-function setError(arg0: string) {
-  throw new Error("Function not implemented.");
-}
