@@ -1,4 +1,3 @@
-import { signup } from "@/services/auth.service";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -12,16 +11,23 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+
+import { AppDispatch, RootState } from "@/store";
+import { signupThunk } from "@/store/authSlice";
 
 export default function SignupScreen() {
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  const { loading, error, user } = useSelector(
+    (state: RootState) => state.auth,
+  );
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const currentYear = new Date().getFullYear();
 
@@ -29,16 +35,46 @@ export default function SignupScreen() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSignup = async () => {
-    setLoading(true);
-    setError("");
+    dispatch({ type: "auth/clearError" });
+
+    if (!firstName) {
+      alert("Prénom requis");
+      return;
+    }
+
+    if (!lastName) {
+      alert("Nom requis");
+      return;
+    }
+
+    if (!email) {
+      alert("Email requis");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      alert("Email invalide");
+      return;
+    }
+
+    if (!password) {
+      alert("Mot de passe requis");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
 
     try {
-      await signup(firstName, lastName, email, password);
-      router.replace("home");
+      await dispatch(
+        signupThunk({ firstName, lastName, email, password }),
+      ).unwrap();
+
+      router.replace("/home");
     } catch (err: any) {
-      setError(err.message || "Erreur");
-    } finally {
-      setLoading(false);
+      alert(err);
     }
   };
 
@@ -149,10 +185,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "#dbeafe",
     padding: 14,
@@ -176,3 +209,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+function setError(arg0: string) {
+  throw new Error("Function not implemented.");
+}
