@@ -4,8 +4,8 @@
 
 ## DISCLAIMER:
 
-- THis mobile is created for a demo purpose only !
-- The backend, which servers this app, is live on Render !
+- This mobile application is created for a demo purpose only !
+- The backend, which serves this app, is live on Render !
 - And because I'm using their free services, there is some delay [cold start] on the first login ! from a few seconds up to a minute.
 
 ## INSTALLATION
