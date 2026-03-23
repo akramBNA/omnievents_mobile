@@ -47,7 +47,7 @@ export default function LoginScreen() {
     setLocalError("");
 
     try {
-      const res = await dispatch(loginThunk({ email, password })).unwrap();
+      await dispatch(loginThunk({ email, password })).unwrap();
       router.replace("/home");
     } catch (err: any) {
       Alert.alert("Accès refusé!", err);
