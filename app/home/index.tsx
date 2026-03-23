@@ -3,7 +3,9 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
+    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
@@ -28,6 +30,15 @@ export default function HomeScreen() {
   const [rowsPerPage] = useState(5);
   const [total, setTotal] = useState(0);
   const [userId, setUserId] = useState<number | null>(null);
+  const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setPage(0);
+    await fetchEvents();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     AsyncStorage.getItem("user_id").then((id) => {
@@ -39,7 +50,7 @@ export default function HomeScreen() {
     if (userId !== null) fetchEvents();
   }, [page, search, userId]);
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (customPage = page, customSearch = search) => {
     setLoading(true);
     try {
       const token = await AsyncStorage.getItem("token");
@@ -50,15 +61,14 @@ export default function HomeScreen() {
           params: {
             user_id: userId,
             limit: rowsPerPage,
-            offset: page * rowsPerPage,
-            keyword: search,
+            offset: customPage * rowsPerPage,
+            keyword: customSearch,
           },
           headers: {
             Authorization: `Bearer ${token}`,
           },
         },
       );
-      console.log("res:", res.data);
 
       setEvents(res.data.data || []);
       setTotal(res.data.total || 0);
@@ -72,12 +82,17 @@ export default function HomeScreen() {
   const handleSubscribe = async (event: Event) => {
     if (!userId) return;
 
+    setLoadingEventId(event.event_id);
+
     try {
       const token = await AsyncStorage.getItem("token");
 
       await axios.post(
         "https://omnievents-backend.onrender.com/api/users_events/subscribeToEvent",
-        { event_id: event.event_id, user_id: userId },
+        {
+          event_id: event.event_id,
+          user_id: userId,
+        },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -90,8 +105,16 @@ export default function HomeScreen() {
           e.event_id === event.event_id ? { ...e, isSubscribed: true } : e,
         ),
       );
-    } catch (err) {
+
+      Alert.alert("Succès!", "Vous êtes inscrit à cet événement !");
+    } catch (err: any) {
       console.error(err);
+      Alert.alert(
+        "Erreur!",
+        err?.response?.data?.message || "Une erreur est survenue",
+      );
+    } finally {
+      setLoadingEventId(null);
     }
   };
 
@@ -137,17 +160,29 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[
                   styles.subscribeButton,
-                  item.isSubscribed && styles.subscribedButton,
+                  (item.isSubscribed || loadingEventId === item.event_id) &&
+                    styles.subscribedButton,
                 ]}
-                disabled={item.isSubscribed}
+                disabled={item.isSubscribed || loadingEventId === item.event_id}
                 onPress={() => handleSubscribe(item)}
               >
-                <Text style={styles.subscribeText}>
-                  {item.isSubscribed ? "Inscrit" : "S'inscrire"}
-                </Text>
+                {loadingEventId === item.event_id ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.subscribeText}>
+                    {item.isSubscribed ? "Inscrit" : "S'inscrire"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#fff"
+            />
+          }
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
