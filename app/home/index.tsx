@@ -253,12 +253,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pageButton: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#28a745",
     padding: 10,
     borderRadius: 8,
   },
   disabledButton: {
-    backgroundColor: "#888",
+    backgroundColor: "#dc3545",
   },
   pageButtonText: {
     color: "#fff",
