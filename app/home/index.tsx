@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pageButton: {
-    backgroundColor: "#gree",
+    backgroundColor: "#2563eb",
     padding: 10,
     borderRadius: 8,
   },
