@@ -1,5 +1,5 @@
-import { getEvents, subscribeToEvent } from "@/services/events.service";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AppDispatch, RootState } from "@/store";
+import { fetchEventsThunk, subscribeThunk } from "@/store/eventsSlice";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -12,6 +12,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 interface Event {
   event_id: number;
@@ -23,84 +24,77 @@ interface Event {
 }
 
 export default function HomeScreen() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const dispatch = useDispatch<AppDispatch>();
+  const { events, total, loading } = useSelector(
+    (state: RootState) => state.events,
+  );
+
+  const [userId, setUserId] = useState<number | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage] = useState(5);
-  const [total, setTotal] = useState(0);
-  const [userId, setUserId] = useState<number | null>(null);
-  const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
 
+  // fetch events when page, search, or userId changes
+  useEffect(() => {
+    if (userId !== null) {
+      dispatch(
+        fetchEventsThunk({
+          userId,
+          page,
+          limit: rowsPerPage,
+          keyword: search,
+        }),
+      );
+    }
+  }, [dispatch, userId, page, search]);
+
+  // refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
     setPage(0);
-    await fetchEvents();
+    if (userId !== null) {
+      await dispatch(
+        fetchEventsThunk({
+          userId,
+          page: 0,
+          limit: rowsPerPage,
+          keyword: search,
+        }),
+      );
+    }
     setRefreshing(false);
   };
 
-  useEffect(() => {
-    AsyncStorage.getItem("user_id").then((id) => {
-      if (id) setUserId(Number(id));
-    });
-  }, []);
-
-  useEffect(() => {
-    if (userId !== null) fetchEvents();
-  }, [page, search, userId]);
-
-  const fetchEvents = async (customPage = page, customSearch = search) => {
-    setLoading(true);
-
-    try {
-      const data = await getEvents({
-        userId: userId!,
-        page: customPage,
-        limit: rowsPerPage,
-        keyword: customSearch,
-      });
-
-      setEvents(data.data || []);
-      setTotal(data.total || 0);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // subscribe handler
   const handleSubscribe = async (event: Event) => {
     if (!userId) return;
 
     setLoadingEventId(event.event_id);
 
-    try {
-      await subscribeToEvent(event.event_id, userId);
+    const res = await dispatch(
+      subscribeThunk({ eventId: event.event_id, userId }),
+    );
 
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.event_id === event.event_id ? { ...e, isSubscribed: true } : e,
-        ),
-      );
-
-      Alert.alert("Succès!", "Vous êtes inscrit !");
-    } catch (err: any) {
-      Alert.alert("Erreur", err.message || "Erreur est survenue!");
-    } finally {
-      setLoadingEventId(null);
+    if (subscribeThunk.fulfilled.match(res)) {
+      Alert.alert("Succès!", "Vous êtes inscrit à cet événement !");
+    } else {
+      Alert.alert("Erreur", res.payload || "Une erreur est survenue !");
     }
+
+    setLoadingEventId(null);
   };
 
   const totalPages = Math.ceil(total / rowsPerPage);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Evenements</Text>
+      <Text style={styles.title}>Événements</Text>
 
       <TextInput
         style={styles.search}
-        placeholder="Chercher des événements.."
+        placeholder="Chercher des événements..."
         value={search}
         onChangeText={(text) => {
           setPage(0);
@@ -108,7 +102,7 @@ export default function HomeScreen() {
         }}
       />
 
-      {loading ? (
+      {loading && page === 0 ? (
         <ActivityIndicator
           size="large"
           color="#fff"
