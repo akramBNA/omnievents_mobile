@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -13,16 +11,23 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+
+import { AppDispatch, RootState } from "@/store";
+import { signupThunk } from "@/store/authSlice";
 
 export default function SignupScreen() {
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+
+  const { loading, error, user } = useSelector(
+    (state: RootState) => state.auth,
+  );
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const currentYear = new Date().getFullYear();
 
@@ -30,40 +35,46 @@ export default function SignupScreen() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSignup = async () => {
-    setError("");
+    dispatch({ type: "auth/clearError" });
 
-    if (!firstName) return setError("Prénom requis");
-    if (!lastName) return setError("Nom requis");
-    if (!email) return setError("Email requis");
-    if (!validateEmail(email)) return setError("Email invalide");
-    if (!password) return setError("Mot de passe requis");
-    if (password.length < 6)
-      return setError("Mot de passe doit contenir au moins 6 caractères");
+    if (!firstName) {
+      alert("Prénom requis");
+      return;
+    }
 
-    setLoading(true);
+    if (!lastName) {
+      alert("Nom requis");
+      return;
+    }
+
+    if (!email) {
+      alert("Email requis");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      alert("Email invalide");
+      return;
+    }
+
+    if (!password) {
+      alert("Mot de passe requis");
+      return;
+    }
+
+    if (password.length < 6) {
+      alert("Mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
 
     try {
-      const res = await axios.post(
-        "https://omnievents-backend.onrender.com/api/users/signUp/",
-        {
-          user_name: firstName,
-          user_lastname: lastName,
-          user_email: email,
-          user_password: password,
-        },
-      );
+      await dispatch(
+        signupThunk({ firstName, lastName, email, password }),
+      ).unwrap();
 
-      const { data, token } = res.data;
-
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("user_name", data.user_name);
-      await AsyncStorage.setItem("user_id", String(data.user_id));
-
-      router.replace("home");
+      router.replace("/home");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de l'inscription");
-    } finally {
-      setLoading(false);
+      alert(err);
     }
   };
 
@@ -174,10 +185,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "#dbeafe",
     padding: 14,
@@ -201,3 +209,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+function setError(arg0: string) {
+  throw new Error("Function not implemented.");
+}

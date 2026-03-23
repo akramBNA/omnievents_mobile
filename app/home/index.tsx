@@ -1,15 +1,20 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
+    RefreshControl,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+
+import { AppDispatch, RootState } from "@/store";
+import { fetchEventsThunk, subscribeThunk } from "@/store/eventsSlice";
 
 interface Event {
   event_id: number;
@@ -21,13 +26,17 @@ interface Event {
 }
 
 export default function HomeScreen() {
-  const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { events, loading, total } = useSelector(
+    (state: RootState) => state.events,
+  );
+
+  const [userId, setUserId] = useState<number | null>(null);
+  const [loadingEventId, setLoadingEventId] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage] = useState(5);
-  const [total, setTotal] = useState(0);
-  const [userId, setUserId] = useState<number | null>(null);
+  const rowsPerPage = 5;
 
   useEffect(() => {
     AsyncStorage.getItem("user_id").then((id) => {
@@ -36,62 +45,46 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (userId !== null) fetchEvents();
-  }, [page, search, userId]);
-
-  const fetchEvents = async () => {
-    setLoading(true);
-    try {
-      const token = await AsyncStorage.getItem("token");
-
-      const res = await axios.get(
-        "https://omnievents-backend.onrender.com/api/events/getAllEvents",
-        {
-          params: {
-            user_id: userId,
-            limit: rowsPerPage,
-            offset: page * rowsPerPage,
-            keyword: search,
-          },
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+    if (userId !== null) {
+      dispatch(
+        fetchEventsThunk({
+          userId,
+          page,
+          limit: rowsPerPage,
+          keyword: search,
+        }),
       );
-      console.log("res:", res.data);
-
-      setEvents(res.data.data || []);
-      setTotal(res.data.total || 0);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
     }
+  }, [userId, page, search, dispatch]);
+
+  const onRefresh = async () => {
+    if (!userId) return;
+    setRefreshing(true);
+    setPage(0);
+    await dispatch(
+      fetchEventsThunk({
+        userId,
+        page: 0,
+        limit: rowsPerPage,
+        keyword: search,
+      }),
+    );
+    setRefreshing(false);
   };
 
   const handleSubscribe = async (event: Event) => {
     if (!userId) return;
 
+    setLoadingEventId(event.event_id);
     try {
-      const token = await AsyncStorage.getItem("token");
-
-      await axios.post(
-        "https://omnievents-backend.onrender.com/api/users_events/subscribeToEvent",
-        { event_id: event.event_id, user_id: userId },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.event_id === event.event_id ? { ...e, isSubscribed: true } : e,
-        ),
-      );
-    } catch (err) {
-      console.error(err);
+      await dispatch(
+        subscribeThunk({ eventId: event.event_id, userId }),
+      ).unwrap();
+      Alert.alert("Succès!", "Vous êtes inscrit à cet événement !");
+    } catch (err: any) {
+      Alert.alert("Erreur", err || "Une erreur est survenue");
+    } finally {
+      setLoadingEventId(null);
     }
   };
 
@@ -99,11 +92,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Evenements</Text>
+      <Text style={styles.title}>Événements</Text>
 
       <TextInput
         style={styles.search}
-        placeholder="Chercher des événements.."
+        placeholder="Chercher des événements..."
         value={search}
         onChangeText={(text) => {
           setPage(0);
@@ -111,7 +104,7 @@ export default function HomeScreen() {
         }}
       />
 
-      {loading ? (
+      {loading && events.length === 0 ? (
         <ActivityIndicator
           size="large"
           color="#fff"
@@ -137,17 +130,29 @@ export default function HomeScreen() {
               <TouchableOpacity
                 style={[
                   styles.subscribeButton,
-                  item.isSubscribed && styles.subscribedButton,
+                  (item.isSubscribed || loadingEventId === item.event_id) &&
+                    styles.subscribedButton,
                 ]}
-                disabled={item.isSubscribed}
+                disabled={item.isSubscribed || loadingEventId === item.event_id}
                 onPress={() => handleSubscribe(item)}
               >
-                <Text style={styles.subscribeText}>
-                  {item.isSubscribed ? "Inscrit" : "S'inscrire"}
-                </Text>
+                {loadingEventId === item.event_id ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.subscribeText}>
+                    {item.isSubscribed ? "Inscrit" : "S'inscrire"}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#fff"
+            />
+          }
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
@@ -248,7 +253,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   pageButton: {
-    backgroundColor: "#gree",
+    backgroundColor: "#2563eb",
     padding: 10,
     borderRadius: 8,
   },

@@ -1,65 +1,45 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { AppDispatch, RootState } from "@/store";
+import { loginThunk } from "@/store/authSlice";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
+  const [localError, setLocalError] = useState("");
   const currentYear = new Date().getFullYear();
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async () => {
-    setError("");
-
-    if (!email) return setError("Email requis");
-    if (!validateEmail(email)) return setError("Email invalide");
-    if (!password) return setError("Mot de passe requis");
+    if (!email) return setLocalError("Email requis");
+    if (!validateEmail(email)) return setLocalError("Email invalide");
+    if (!password) return setLocalError("Mot de passe requis");
     if (password.length < 6)
-      return setError("Mot de passe doit contenir au moins 6 caractères");
+      return setLocalError("Mot de passe doit contenir au moins 6 caractères");
 
-    setLoading(true);
+    setLocalError("");
 
     try {
-      const res = await axios.post(
-        "https://omnievents-backend.onrender.com/api/users/signIn/",
-        {
-          user_email: email,
-          user_password: password,
-        },
-      );
-
-      const { data, token } = res.data;
-
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("user_id", data.user_id.toString());
-      await AsyncStorage.setItem("user_name", data.user_name);
-
-      // router.replace("/");
-
-      router.replace("home");
-
-      console.log("USER:", data);
-      console.log("TOKEN:", token);
+      const res = await dispatch(loginThunk({ email, password })).unwrap();
+      router.replace("/home");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur");
-    } finally {
-      setLoading(false);
+      Alert.alert("Accès refusé!", err);
     }
   };
 
@@ -68,13 +48,19 @@ export default function LoginScreen() {
       <View style={styles.card}>
         <Text style={styles.title}>Bienvenue au OMNIEVENTS</Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {localError ? (
+          <Text style={styles.error}>{localError}</Text>
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : null}
 
         <TextInput
           placeholder="Email"
           style={styles.input}
           value={email}
           onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <TextInput
@@ -149,10 +135,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  buttonText: { color: "#fff", fontWeight: "bold" },
   secondaryButton: {
     backgroundColor: "#dbeafe",
     padding: 14,
