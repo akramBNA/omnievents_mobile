@@ -1,10 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import { login } from "@/services/auth.service";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -26,42 +24,14 @@ export default function LoginScreen() {
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleLogin = async () => {
+    setLoading(true);
     setError("");
 
-    if (!email) return setError("Email requis");
-    if (!validateEmail(email)) return setError("Email invalide");
-    if (!password) return setError("Mot de passe requis");
-    if (password.length < 6)
-      return setError("Mot de passe doit contenir au moins 6 caractères");
-
-    setLoading(true);
-
     try {
-      const res = await axios.post(
-        "https://omnievents-backend.onrender.com/api/users/signIn/",
-        {
-          user_email: email,
-          user_password: password,
-        },
-      );
-
-      const { data, token } = res.data;
-
-      if (data.role_type !== "user") {
-        Alert.alert(
-          "Accès refusé",
-          "Cette application est réservée aux utilisateurs.",
-        );
-        return;
-      }
-
-      await AsyncStorage.setItem("token", token);
-      await AsyncStorage.setItem("user_id", data.user_id.toString());
-      await AsyncStorage.setItem("user_name", data.user_name);
-
+      await login(email, password);
       router.replace("home");
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur");
+      setError(err.message || "Erreur");
     } finally {
       setLoading(false);
     }
