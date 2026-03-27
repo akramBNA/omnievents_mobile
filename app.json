@@ -1,7 +1,11 @@
 {
   "expo": {
-    "name": "OMNI EVENTS",
-    "slug": "omnievents mobile app",
+    "name": "OMNIEVENTS",
+    "slug": "omnievents_mobile_app",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -43,6 +47,18 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ddb136fa-24ef-4647-936e-1611765a0085"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/ddb136fa-24ef-4647-936e-1611765a0085"
     }
   }
 }
